@@ -289,9 +289,9 @@ async function callAnthropic(payload) {
   let lastErr;
   // First try direct (works if CORS is allowed in context)
   const attempts = [
-    { url: ANTHROPIC_URL, headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' } },
-    { url: PROXIES[0](ANTHROPIC_URL), headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' } },
-    { url: PROXIES[1](ANTHROPIC_URL), headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' } },
+    { url: ANTHROPIC_URL, headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } },
+    { url: PROXIES[0](ANTHROPIC_URL), headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } },
+    { url: PROXIES[1](ANTHROPIC_URL), headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } },
   ];
 
   for (const attempt of attempts) {
