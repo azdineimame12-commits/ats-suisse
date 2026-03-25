@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATS Generator — Suisse</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+:root {
+  --bg: #F5F2EC; --surface: #FFFFFF; --surface2: #EDE9E1; --border: #D8D2C6;
+  --accent: #1A3A5C; --accent2: #C8A96E; --text: #1C1C1C; --muted: #6B6560;
+  --green: #2D6A4F; --tag-bg: #E8F4F0; --red: #9B2226;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+#api-gate {
+  position: fixed; inset: 0; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px;
+}
+.gate-box { background: var(--surface); border-radius: 16px; padding: 40px 36px; max-width: 460px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+.gate-logo { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--accent); margin-bottom: 6px; }
+.gate-logo span { color: var(--accent2); }
+.gate-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
+.gate-label { font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; display: block; }
+.gate-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.gate-input-row input { flex: 1; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 11px 14px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); outline: none; transition: border-color .2s; }
+.gate-input-row input:focus { border-color: var(--accent); background: #fff; }
+.btn-eye { background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 0 14px; cursor: pointer; font-size: 1rem; color: var(--muted); transition: all .2s; }
+.btn-eye:hover { background: var(--surface2); }
+.gate-hint { font-size: 0.76rem; color: var(--muted); margin-bottom: 22px; line-height: 1.6; }
+.gate-hint a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.gate-hint a:hover { text-decoration: underline; }
+.gate-save-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.gate-save-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.gate-save-row label { font-size: 0.78rem; color: var(--muted); cursor: pointer; margin: 0; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.btn-gate { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background .2s; }
+.btn-gate:hover { background: #0f2540; }
+.gate-error { font-size: 0.78rem; color: var(--red); margin-top: 10px; display: none; background: #fff0f0; padding: 10px 14px; border-radius: 8px; border: 1px solid #f5c6c6; }
+
+#api-badge { display: none; align-items: center; gap: 6px; font-size: 0.74rem; color: rgba(255,255,255,.7); cursor: pointer; padding: 5px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,.2); transition: background .2s; }
+#api-badge:hover { background: rgba(255,255,255,.1); }
+#api-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+
+header { background: var(--accent); padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: 'DM Serif Display', serif; color: #fff; font-size: 1.4rem; }
+.logo span { color: var(--accent2); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.badge { font-size: 0.72rem; background: var(--accent2); color: var(--accent); font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+#app { display: none; }
+.container { max-width: 1200px; margin: 0 auto; padding: 36px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media(max-width:800px){ .container { grid-template-columns: 1fr; } header { padding: 14px 18px; } }
+
+.card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 24px; }
+.card-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--accent); margin-bottom: 4px; }
+.card-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 18px; }
+
+label { display: block; font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; margin-top: 14px; }
+label:first-of-type { margin-top: 0; }
+input[type=text], textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+  padding: 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.86rem; color: var(--text);
+  outline: none; transition: border-color .2s;
+}
+input[type=text]:focus, textarea:focus { border-color: var(--accent); background: #fff; }
+textarea { resize: vertical; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.two-col .full { grid-column: 1/-1; }
+
+.exp-block, .form-block { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; background: #FAFAF8; }
+.block-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.block-title { font-size: 0.82rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+.btn-remove { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1.1rem; padding: 2px 8px; border-radius: 4px; transition: color .2s, background .2s; }
+.btn-remove:hover { color: var(--red); background: #fff0f0; }
+.btn-add { width: 100%; padding: 10px; border: 1.5px dashed var(--border); background: none; border-radius: 8px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.84rem; cursor: pointer; transition: all .2s; margin-top: 4px; }
+.btn-add:hover { border-color: var(--accent); color: var(--accent); background: #EEF4FB; }
+
+.btn-generate { width: 100%; margin-top: 20px; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .2s; }
+.btn-generate:hover { background: #0f2540; }
+.btn-generate:disabled { background: #9aa5b1; cursor: not-allowed; }
+
+.loader-wrap { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 320px; gap: 14px; color: var(--muted); font-size: 0.86rem; }
+.loader-wrap.active { display: flex; }
+.spinner { width: 42px; height: 42px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .85s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#placeholder { min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; color: var(--muted); }
+.results-wrap { display: none; }
+.results-wrap.active { display: block; }
+
+.score-row { display: flex; align-items: center; gap: 16px; padding: 14px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border); margin-bottom: 16px; }
+.score-circle { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 1.3rem; font-weight: bold; flex-shrink: 0; }
+.s-good { background: #D4EDE3; color: var(--green); }
+.s-med { background: #FFF3CD; color: #856404; }
+.score-txt h3 { font-size: 0.9rem; font-weight: 700; }
+.score-txt p { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+.kw-section { margin-bottom: 14px; }
+.kw-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 7px; }
+.kw-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.kw { font-size: 0.74rem; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+.kw-found { background: var(--tag-bg); color: var(--green); border: 1px solid #b7dfd0; }
+
+.tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 10px; padding: 4px; margin: 16px 0 14px; }
+.tab { flex: 1; padding: 9px; border: none; border-radius: 7px; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.84rem; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .2s; }
+.tab.active { background: var(--surface); color: var(--accent); font-weight: 700; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.doc-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px; font-size: 0.82rem; line-height: 1.75; color: var(--text); max-height: 480px; overflow-y: auto; }
+.doc-preview h1 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--accent); border-bottom: 2px solid var(--accent2); padding-bottom: 5px; margin-bottom: 8px; }
+.doc-preview h2 { font-size: 0.78rem; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; margin: 14px 0 6px; border-left: 3px solid var(--accent2); padding-left: 8px; }
+.doc-preview ul { padding-left: 16px; margin-bottom: 6px; }
+.doc-preview li { margin-bottom: 2px; }
+.doc-preview strong { color: var(--accent); }
+
+.info-box { background: #EEF4FB; border: 1px solid #C5D8EF; border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; color: var(--accent); margin-bottom: 12px; }
+.dl-row { display: flex; gap: 10px; margin-top: 14px; }
+.btn-dl { flex: 1; padding: 11px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.84rem; font-weight: 700; cursor: pointer; border: none; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+.btn-word { background: #1B5E20; color: #fff; }
+.btn-word:hover { background: #145214; }
+.btn-copy { background: var(--surface2); color: var(--accent); border: 1px solid var(--border); }
+.btn-copy:hover { background: var(--border); }
+
+.error-box { background: #fff0f0; border: 1px solid #f5c6c6; border-radius: 8px; padding: 12px 16px; color: var(--red); font-size: 0.82rem; margin-top: 12px; display: none; }
+
+.proxy-selector { margin-bottom: 0; }
+.proxy-selector select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--muted); outline: none; }
+</style>
+</head>
+<body>
+
+<!-- ══ API GATE ══ -->
+<div id="api-gate">
+  <div class="gate-box">
+    <div class="gate-logo">ATS<span>Suisse</span></div>
+    <div class="gate-sub">Générateur de CV et lettres de motivation optimisés pour le marché suisse. Entrez votre clé API Anthropic pour commencer.</div>
+    <span class="gate-label">Clé API Anthropic</span>
+    <div class="gate-input-row">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" onkeydown="if(event.key==='Enter')validateKey()">
+      <button class="btn-eye" onclick="toggleVis()">👁</button>
+    </div>
+    <div class="gate-hint">
+      Obtenez votre clé sur <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key.<br>
+      La clé reste sur votre appareil, elle n'est jamais partagée.
+    </div>
+    <div class="gate-save-row">
+      <input type="checkbox" id="saveKey" checked>
+      <label for="saveKey">Mémoriser la clé sur cet appareil</label>
+    </div>
+    <button class="btn-gate" onclick="validateKey()">Accéder à l'application →</button>
+    <div class="gate-error" id="gateError"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+<header>
+  <div class="logo">ATS<span>Suisse</span></div>
+  <div class="header-right">
+    <div id="api-badge" onclick="resetKey()"><div class="dot"></div><span>API connectée — changer</span></div>
+    <div class="badge">🇨🇭 Optimisé marché suisse</div>
+  </div>
+</header>
+
+<div class="container">
+<div><!-- LEFT -->
+
+<div class="card">
+  <div class="card-title">👤 Informations personnelles</div>
+  <div class="card-sub">Pré-rempli depuis votre CV — tout est modifiable</div>
+  <div class="two-col">
+    <div><label>Prénom</label><input type="text" id="prenom" value="Azdine"></div>
+    <div><label>Nom</label><input type="text" id="nom" value="IMAME"></div>
+    <div class="full"><label>Titre professionnel</label><input type="text" id="titre" value="Planificateur Supply Chain | Coordinateur Logistique"></div>
+    <div><label>Email</label><input type="text" id="email" value="azdine.imame12@gmail.com"></div>
+    <div><label>Téléphone</label><input type="text" id="tel" value="+33 7 68 29 44 10"></div>
+    <div><label>Nationalité</label><input type="text" id="nationalite" value="Française"></div>
+    <div><label>Disponibilité</label><input type="text" id="dispo" value="Immédiate"></div>
+    <div class="full"><label>Adresse</label><input type="text" id="adresse" value="01630 Saint-Genis-Pouilly, France"></div>
+    <div><label>LinkedIn</label><input type="text" id="linkedin" value="Azdine IMAME"></div>
+    <div><label>Permis de conduire</label><input type="text" id="permis" value="Oui — véhiculé"></div>
+    <div class="full"><label>Statut frontalier</label><input type="text" id="frontalier" value="Frontalier pays de Gex — permis G éligible"></div>
+    <div><label>Langues</label><input type="text" id="langues" value="Français (natif), Anglais (B2), Espagnol (B1)"></div>
+    <div><label>Outils informatiques</label><input type="text" id="outils" value="SAP, Oracle, Excel avancé (TCD, macros), Pack Office"></div>
+    <div class="full"><label>Profil / Résumé</label><textarea id="profil" rows="3">Fort de 4 ans d'expérience en Supply Chain, maîtrise de l'intégralité de la chaîne de planification, de l'optimisation des approvisionnements au pilotage quotidien des flux. Expert ERP (SAP, Oracle). Habitué aux environnements exigeants, vision orientée résultats et amélioration continue.</textarea></div>
+    <div class="full"><label>Compétences clés</label><textarea id="competences" rows="2">Planification S&OP, Gestion stocks, Management 3PL, SAP, Oracle, Excel avancé, Reporting KPI/SLA, Procure-to-Pay, Appels d'offres, Négociation, Gestion de projet, Amélioration continue</textarea></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:20px">
+  <div class="card-title">💼 Expériences professionnelles</div>
+  <div class="card-sub">Chaque expérience est détaillée séparément</div>
+  <div id="exp-container"></div>
+  <button class="btn-add" onclick="addExp()">+ Ajouter une expérience</button>
+</div>
+
+<div class="card" style="margin-top:20px">
+  <div class="card-title">🎓 Formations</div>
+  <div class="card-sub">Chaque diplôme est détaillé séparément</div>
+  <div id="form-container"></div>
+  <button class="btn-add" onclick="addForm()">+ Ajouter une formation</button>
+</div>
+
+</div>
+<div><!-- RIGHT -->
+
+<div class="card">
+  <div class="card-title">📋 Offre d'emploi cible</div>
+  <div class="card-sub">Collez le texte complet de l'offre</div>
+  <label>Entreprise (optionnel)</label>
+  <input type="text" id="entreprise" placeholder="ex. Nestlé, Roche, Kuehne+Nagel...">
+  <label>Lieu (optionnel)</label>
+  <input type="text" id="lieu" placeholder="ex. Genève, Zurich, Lausanne...">
+  <label>Texte de l'offre *</label>
+  <textarea id="offre" rows="9" placeholder="Collez ici le descriptif complet du poste..."></textarea>
+  <button class="btn-generate" id="btnGen" onclick="generate()">
+    <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    Générer CV + Lettre de motivation ATS
+  </button>
+  <div class="error-box" id="errBox"></div>
+</div>
+
+<div class="card" id="placeholder" style="margin-top:20px">
+  <div style="font-size:2.5rem;margin-bottom:10px">📄</div>
+  <div style="font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--accent)">Vos documents apparaîtront ici</div>
+  <div style="font-size:0.8rem;max-width:260px;line-height:1.6;margin-top:8px">Remplissez l'offre et cliquez sur "Générer".</div>
+</div>
+
+<div class="card loader-wrap" id="loader" style="margin-top:20px">
+  <div class="spinner"></div>
+  <div id="loaderMsg">Analyse de l'offre en cours…</div>
+</div>
+
+<div class="results-wrap" id="results" style="margin-top:20px">
+  <div class="card">
+    <div class="score-row">
+      <div class="score-circle s-good" id="scoreCircle">—</div>
+      <div class="score-txt"><h3 id="scoreTitle">Score ATS</h3><p id="scoreDesc"></p></div>
+    </div>
+    <div class="kw-section">
+      <div class="kw-label">Mots-clés détectés et intégrés</div>
+      <div class="kw-tags" id="kwFound"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('cv',this)">📄 CV ATS</button>
+      <button class="tab" onclick="switchTab('lm',this)">✉️ Lettre de motivation</button>
+    </div>
+    <div class="tab-content active" id="tab-cv">
+      <div class="info-box">✅ CV ATS suisse — structure linéaire, mots-clés intégrés, format Word modifiable.</div>
+      <div class="doc-preview" id="cvPreview"></div>
+      <div class="dl-row">
+        <button class="btn-dl btn-word" onclick="dlWord('cv')">⬇ Télécharger CV (.docx)</button>
+        <button class="btn-dl btn-copy" onclick="copyText('cv')">📋 Copier texte</button>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-lm">
+      <div class="info-box">✅ Lettre structurée selon les usages suisses, format Word modifiable.</div>
+      <div class="doc-preview" id="lmPreview"></div>
+      <div class="dl-row">
+        <button class="btn-dl btn-word" onclick="dlWord('lm')">⬇ Télécharger Lettre (.docx)</button>
+        <button class="btn-dl btn-copy" onclick="copyText('lm')">📋 Copier texte</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+// ══ API KEY ══
+let API_KEY = '';
+
+// Proxy list — tried in order until one works
+const PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://cors-anywhere.herokuapp.com/${url}`,
+];
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+async function callAnthropic(payload) {
+  let lastErr;
+  // First try direct (works if CORS is allowed in context)
+  const attempts = [
+    { url: ANTHROPIC_URL, headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' } },
+    { url: PROXIES[0](ANTHROPIC_URL), headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' } },
+    { url: PROXIES[1](ANTHROPIC_URL), headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01' } },
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const resp = await fetch(attempt.url, {
+        method: 'POST',
+        headers: attempt.headers,
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${resp.status}`);
+      }
+      return await resp.json();
+    } catch(e) {
+      lastErr = e;
+      if (e.message && !e.message.includes('fetch')) throw e; // Real API error, don't retry
+    }
+  }
+  throw lastErr;
+}
+
+function toggleVis() {
+  const i = document.getElementById('apiKeyInput');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+function validateKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  const err = document.getElementById('gateError');
+  if (!val) { err.textContent = '⚠️ Veuillez entrer votre clé API.'; err.style.display = 'block'; return; }
+  if (!val.startsWith('sk-ant-')) { err.textContent = '⚠️ Clé invalide — elle doit commencer par sk-ant-...'; err.style.display = 'block'; return; }
+  API_KEY = val;
+  if (document.getElementById('saveKey').checked) {
+    try { localStorage.setItem('ats_api_key', val); } catch(e) {}
+  }
+  launchApp();
+}
+
+function launchApp() {
+  document.getElementById('api-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('api-badge').style.display = 'flex';
+  init();
+}
+
+function resetKey() {
+  if (!confirm('Changer de clé API ? La page va se recharger.')) return;
+  try { localStorage.removeItem('ats_api_key'); } catch(e) {}
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = localStorage.getItem('ats_api_key');
+    if (saved && saved.startsWith('sk-ant-')) { API_KEY = saved; document.getElementById('apiKeyInput').value = saved; launchApp(); }
+  } catch(e) {}
+});
+
+// ══ DATA ══
+let expCount = 0, formCount = 0, cvRaw = '', lmRaw = '', loaderTimer = null;
+const loaderMsgs = ['Analyse des mots-clés ATS…',"Adaptation du profil à l'offre…",'Rédaction du CV optimisé…','Rédaction de la lettre…','Vérification normes suisses…','Finalisation…'];
+
+const defaultExps = [
+  { poste:'Pilote Supply Chain', entreprise:'ORANGE', secteur:'Télécommunication', debut:'09/2024', fin:'09/2025', lieu:'France',
+    realisations:`Pilotage quotidien des stocks et flux d'approvisionnement sur l'ensemble du catalogue mobiles/accessoires (B2B/B2C) pour garantir la qualité de service (QoS).
+Management de la relation prestataires logistiques (3PL) : animation des revues KPI/SLA, audit des processus de réception, préparation et reverse logistics → Taux d'erreur de préparation maintenu à moins de 2%.
+Lead Supply sur les lancements produits (NPI) et opérations One Shot : coordination des flux pour un déploiement J+1 → Succès logistique iPhone 16 et Samsung Galaxy S25 sans rupture.
+Excellence opérationnelle : suppression des cartons surdimensionnés → Réduction de la consommation de carton de 15% et optimisation des coûts de transport.` },
+  { poste:'Acheteur Indirect (apprentissage)', entreprise:'MENARINI', secteur:'Laboratoire pharmaceutique', debut:'09/2022', fin:'09/2024', lieu:'France',
+    realisations:`Pilotage du cycle Procure-to-Pay via SAP : gestion intégrale des commandes (PO), automatisation du suivi des commandes récurrentes → Réduction des délais de traitement.
+Gestion des appels d'offres (Marketing, IT, Prestations intellectuelles, Services généraux) : rédaction des cahiers des charges, analyse TCO, négociation → Économie moyenne de 20%.
+Pilotage de la performance fournisseurs : refonte des grilles tarifaires, élimination des facturations hors-contrat.
+Déploiement stratégie Achats Responsables (RSE) : élaboration de la charte RSE → Médaille Bronze EcoVadis (+4 points vs année précédente).` },
+  { poste:'Gestionnaire ADV (apprentissage)', entreprise:'GROUPE BV', secteur:'Publicité', debut:'09/2021', fin:'09/2022', lieu:'France',
+    realisations:`Gestion et traitement des commandes clients et fournisseurs.
+Édition des bons de livraison et facturation.
+Gestion des litiges liés aux problèmes de transport, qualité produit et quantités livrées.` }
+];
+
+const defaultForms = [
+  { diplome:"Master Gestion de Production Logistique et Achats (GPLA)", etablissement:"Université Paris Saclay", annee:"2022 – 2024", lieu:"France" },
+  { diplome:"Graduate of Procurement and Supply Chain Program", etablissement:"Seagull Institute — DePaul University", annee:"05/2024", lieu:"Chicago, USA" },
+  { diplome:"Licence (L3) Économie et Gestion — parcours Marketing Achat (mention assez bien)", etablissement:"Université Paris Saclay", annee:"2022", lieu:"France" },
+  { diplome:"DUT Gestion des Entreprises et Administrations option RH (équivalent DT suisse)", etablissement:"IUT de Brétigny-sur-Orge", annee:"2021", lieu:"France" }
+];
+
+function init() { defaultExps.forEach(e=>addExp(e)); defaultForms.forEach(f=>addForm(f)); }
+
+function addExp(data={}) {
+  const id = ++expCount;
+  const div = document.createElement('div');
+  div.className='exp-block'; div.id='exp-'+id;
+  div.innerHTML=`<div class="block-header"><div class="block-title">Expérience #${id}</div><button class="btn-remove" onclick="document.getElementById('exp-${id}').remove()">✕</button></div>
+  <div class="two-col">
+    <div class="full"><label>Poste / Intitulé</label><input type="text" class="ep" value="${esc(data.poste||'')}"></div>
+    <div><label>Entreprise</label><input type="text" class="ee" value="${esc(data.entreprise||'')}"></div>
+    <div><label>Secteur</label><input type="text" class="es" value="${esc(data.secteur||'')}"></div>
+    <div><label>Date de début</label><input type="text" class="ed" placeholder="MM/AAAA" value="${esc(data.debut||'')}"></div>
+    <div><label>Date de fin</label><input type="text" class="ef" placeholder="MM/AAAA ou Présent" value="${esc(data.fin||'')}"></div>
+    <div class="full"><label>Lieu</label><input type="text" class="el" value="${esc(data.lieu||'France')}"></div>
+    <div class="full"><label>Réalisations (une par ligne)</label><textarea class="er" rows="5">${esc(data.realisations||'')}</textarea></div>
+  </div>`;
+  document.getElementById('exp-container').appendChild(div);
+}
+
+function addForm(data={}) {
+  const id = ++formCount;
+  const div = document.createElement('div');
+  div.className='form-block'; div.id='form-'+id;
+  div.innerHTML=`<div class="block-header"><div class="block-title">Formation #${id}</div><button class="btn-remove" onclick="document.getElementById('form-${id}').remove()">✕</button></div>
+  <div class="two-col">
+    <div class="full"><label>Diplôme / Intitulé</label><input type="text" class="fd" value="${esc(data.diplome||'')}"></div>
+    <div class="full"><label>Établissement</label><input type="text" class="fe" value="${esc(data.etablissement||'')}"></div>
+    <div><label>Année / Période</label><input type="text" class="fa" value="${esc(data.annee||'')}"></div>
+    <div><label>Lieu</label><input type="text" class="fl" value="${esc(data.lieu||'France')}"></div>
+  </div>`;
+  document.getElementById('form-container').appendChild(div);
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function collectExps(){ return Array.from(document.querySelectorAll('.exp-block')).map(b=>({ poste:b.querySelector('.ep').value, entreprise:b.querySelector('.ee').value, secteur:b.querySelector('.es').value, debut:b.querySelector('.ed').value, fin:b.querySelector('.ef').value, lieu:b.querySelector('.el').value, realisations:b.querySelector('.er').value.trim().split('\n').filter(l=>l.trim()) })); }
+function collectForms(){ return Array.from(document.querySelectorAll('.form-block')).map(b=>({ diplome:b.querySelector('.fd').value, etablissement:b.querySelector('.fe').value, annee:b.querySelector('.fa').value, lieu:b.querySelector('.fl').value })); }
+function switchTab(tab,btn){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); document.getElementById('tab-'+tab).classList.add('active'); }
+function g(id){ return document.getElementById(id).value; }
+
+async function generate() {
+  const offre = document.getElementById('offre').value.trim();
+  if (!offre||offre.length<40){ showError("Veuillez coller le texte de l'offre."); return; }
+  document.getElementById('errBox').style.display='none';
+  document.getElementById('btnGen').disabled=true;
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('loader').style.display='flex';
+  document.getElementById('loader').classList.add('active');
+  let i=0; document.getElementById('loaderMsg').textContent=loaderMsgs[0];
+  loaderTimer=setInterval(()=>{ i=(i+1)%loaderMsgs.length; document.getElementById('loaderMsg').textContent=loaderMsgs[i]; },2000);
+
+  const p = { prenom:g('prenom'),nom:g('nom'),titre:g('titre'),email:g('email'),tel:g('tel'),adresse:g('adresse'),nationalite:g('nationalite'),dispo:g('dispo'),linkedin:g('linkedin'),permis:g('permis'),frontalier:g('frontalier'),langues:g('langues'),outils:g('outils'),profil:g('profil'),competences:g('competences'),exps:collectExps(),forms:collectForms(),entreprise:g('entreprise'),lieu:g('lieu') };
+
+  try {
+    const data = await callAnthropic({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4000,
+      messages: [{ role:'user', content: buildPrompt(p, offre) }]
+    });
+    if (data.error) throw new Error(data.error.message);
+    parseAndDisplay(data.content[0].text);
+  } catch(err) {
+    stopLoader(); hideLoader();
+    document.getElementById('placeholder').style.display='flex';
+    let msg = err.message;
+    if (msg.includes('401')) msg = 'Clé API invalide ou expirée. Vérifiez votre clé sur console.anthropic.com';
+    else if (msg.includes('429')) msg = 'Quota API dépassé. Rechargez votre compte sur console.anthropic.com → Billing';
+    else if (msg.includes('fetch')||msg.includes('Failed')) msg = 'Impossible de contacter l\'API. Vérifiez votre connexion internet.';
+    showError(msg);
+  } finally {
+    document.getElementById('btnGen').disabled=false;
+  }
+}
+
+function buildPrompt(p, offre) {
+  const expsText = p.exps.map((e,i)=>`Expérience ${i+1}:\n  Poste: ${e.poste}\n  Entreprise: ${e.entreprise}${e.secteur?' ('+e.secteur+')':''}\n  Période: ${e.debut} – ${e.fin}\n  Lieu: ${e.lieu}\n  Réalisations:\n${e.realisations.map(r=>'    - '+r).join('\n')}`).join('\n\n');
+  const formsText = p.forms.map((f,i)=>`Formation ${i+1}:\n  Diplôme: ${f.diplome}\n  Établissement: ${f.etablissement}\n  Année: ${f.annee}\n  Lieu: ${f.lieu}`).join('\n\n');
+  return `Tu es un expert en recrutement suisse et en optimisation ATS. Génère en français un CV et une lettre de motivation optimisés pour une offre d'emploi en Suisse.
+
+PROFIL :
+Nom : ${p.prenom} ${p.nom} | Titre : ${p.titre}
+Email : ${p.email} | Tél : ${p.tel} | Adresse : ${p.adresse}
+Nationalité : ${p.nationalite} | Disponibilité : ${p.dispo}
+LinkedIn : ${p.linkedin} | Permis : ${p.permis} | Statut : ${p.frontalier}
+Langues : ${p.langues} | Outils : ${p.outils}
+Profil : ${p.profil}
+Compétences : ${p.competences}
+
+EXPÉRIENCES :
+${expsText}
+
+FORMATIONS :
+${formsText}
+
+OFFRE :
+Entreprise : ${p.entreprise||'(non précisée)'} | Lieu : ${p.lieu||'(non précisé)'}
+${offre}
+
+INSTRUCTIONS :
+1. Extrais 8-14 mots-clés ATS de l'offre.
+2. CV ATS suisse : structure linéaire uniquement (pas de colonnes/tableaux). Sections MAJUSCULES. Chronologie inverse. Dates MM/AAAA. Intègre les mots-clés naturellement. Pas de références.
+3. Lettre de motivation suisse : en-tête, date en toutes lettres, objet précis, "Madame, Monsieur,", 3 paragraphes, formule de politesse suisse, signature.
+4. Score ATS 0-100.
+
+JSON uniquement sans backticks :
+{"keywords":["kw1","kw2"],"ats_score":82,"score_explanation":"texte","cv":"CV markdown","lettre":"lettre markdown"}`;
+}
+
+function parseAndDisplay(text) {
+  stopLoader(); hideLoader();
+  let data;
+  try { data = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+  catch(e) { try { data = JSON.parse(text.match(/\{[\s\S]*\}/)[0]); } catch(e2) { document.getElementById('placeholder').style.display='flex'; showError("Réponse invalide. Réessayez."); return; } }
+  cvRaw=data.cv||''; lmRaw=data.lettre||'';
+  const score=data.ats_score||75;
+  document.getElementById('scoreCircle').textContent=score+'%';
+  document.getElementById('scoreCircle').className='score-circle '+(score>=70?'s-good':'s-med');
+  document.getElementById('scoreTitle').textContent='Score ATS : '+score+'%';
+  document.getElementById('scoreDesc').textContent=data.score_explanation||'';
+  const kwEl=document.getElementById('kwFound'); kwEl.innerHTML='';
+  (data.keywords||[]).forEach(kw=>{ const s=document.createElement('span'); s.className='kw kw-found'; s.textContent=kw; kwEl.appendChild(s); });
+  document.getElementById('cvPreview').innerHTML=md2html(cvRaw);
+  document.getElementById('lmPreview').innerHTML=md2html(lmRaw);
+  document.getElementById('results').classList.add('active');
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('.tab-content').forEach((c,i)=>c.classList.toggle('active',i===0));
+}
+
+function md2html(md) {
+  if(!md)return'';
+  return md.replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>[^<]*<\/li>(\n|$))+/g,m=>'<ul>'+m+'</ul>').replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+function dlWord(type) {
+  if(!window.docx){alert('Bibliothèque non chargée, réessayez.');return;}
+  const {Document,Packer,Paragraph,TextRun,AlignmentType,BorderStyle,LevelFormat}=docx;
+  const raw=type==='cv'?cvRaw:lmRaw;
+  const fname=type==='cv'?`CV_ATS_${g('nom')}_${g('prenom')}.docx`:`LM_ATS_${g('nom')}_${g('prenom')}.docx`;
+  const doc=new Document({
+    numbering:{config:[{reference:"bullets",levels:[{level:0,format:LevelFormat.BULLET,text:"\u2022",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:560,hanging:280}}}}]}]},
+    styles:{default:{document:{run:{font:"Arial",size:22}}},paragraphStyles:[
+      {id:"CVName",name:"CV Name",basedOn:"Normal",run:{size:38,bold:true,font:"Arial",color:"1A3A5C"},paragraph:{spacing:{before:0,after:100}}},
+      {id:"CVSection",name:"CV Section",basedOn:"Normal",run:{size:22,bold:true,font:"Arial",color:"1A3A5C",allCaps:true},paragraph:{spacing:{before:260,after:120},border:{bottom:{style:BorderStyle.SINGLE,size:8,color:"C8A96E",space:4}}}},
+      {id:"CVBody",name:"CV Body",basedOn:"Normal",run:{size:20,font:"Arial",color:"1C1C1C"},paragraph:{spacing:{before:40,after:40}}}
+    ]},
+    sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:1134,right:1134,bottom:1134,left:1134}}},children:parseToDocx(raw,docx)}]
+  });
+  Packer.toBlob(doc).then(blob=>saveAs(blob,fname));
+}
+
+function parseToDocx(md,docxLib) {
+  const {Paragraph,TextRun,LevelFormat}=docxLib;
+  const result=[]; let firstH1=true;
+  for(const line of md.split('\n')){
+    const t=line.trim();
+    if(!t){result.push(new Paragraph({style:"CVBody",children:[new TextRun({text:"",size:20})]}));continue;}
+    if(t.startsWith('# ')){const txt=t.slice(2);if(firstH1){result.push(new Paragraph({style:"CVName",children:[new TextRun({text:txt,bold:true,size:38,font:"Arial",color:"1A3A5C"})]}));firstH1=false;}else result.push(new Paragraph({style:"CVSection",children:[new TextRun({text:txt,bold:true,size:22,font:"Arial",color:"1A3A5C",allCaps:true})]}));continue;}
+    if(t.startsWith('## ')){result.push(new Paragraph({style:"CVSection",children:[new TextRun({text:t.slice(3),bold:true,size:22,font:"Arial",color:"1A3A5C",allCaps:true})]}));continue;}
+    if(t.startsWith('- ')||t.startsWith('* ')){result.push(new Paragraph({numbering:{reference:"bullets",level:0},children:boldRuns(t.replace(/^[-*]\s+/,''),TextRun)}));continue;}
+    result.push(new Paragraph({style:"CVBody",children:boldRuns(t,TextRun)}));
+  }
+  return result;
+}
+
+function boldRuns(text,TextRun){return text.split(/(\*\*[^*]+\*\*)/).map(p=>p.startsWith('**')&&p.endsWith('**')?new TextRun({text:p.slice(2,-2),bold:true,size:20,font:"Arial"}):new TextRun({text:p,size:20,font:"Arial"}));}
+function copyText(type){const raw=(type==='cv'?cvRaw:lmRaw).replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/^-\s*/gm,'• ');navigator.clipboard.writeText(raw).then(()=>alert('Copié !'));}
+function stopLoader(){clearInterval(loaderTimer);}
+function hideLoader(){document.getElementById('loader').classList.remove('active');document.getElementById('loader').style.display='none';}
+function showError(msg){const b=document.getElementById('errBox');b.textContent='⚠️ '+msg;b.style.display='block';}
+</script>
+</body>
+</html>
